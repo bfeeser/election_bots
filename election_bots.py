@@ -108,7 +108,7 @@ def followers(ctx, user_id):
         writer.write_header()
 
         for followee in get_user_ids_from_csv(input):
-            for follower in api.GetFollowerIds(user_id):
+            for follower in api.GetFollowerIds(followee):
                 writer.writerow({"follower": follower, "followee": followee})
 
 
