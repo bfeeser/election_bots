@@ -97,24 +97,27 @@ def search(ctx, query, since, until, count):
 @click.argument("input")
 @click.argument("output")
 def followers(ctx, user_id):
-    "Get follower IDs from CSV file containing user_ids"
+    """INPUT: CSV file containing user_ids
+       OUTPUT: CSV file with followers and followee user_ids"""
 
     api = get_twitter_api()
 
     with open(output, "w") as outfile:
-        fieldnames = "user_id", "screen_name", "text", "timestamp"
+        fieldnames = "follwer", "followee"
         writer = csv.DictWriter(outfile, fieldnames=fieldnames)
         writer.write_header()
 
-        for user_id in get_user_ids_from_csv(input):
-            result = GetUserTimeline(user_id=user_id)
+        for followee in get_user_ids_from_csv(input):
+            for follower in api.GetFollowerIds(user_id):
+                writer.writerow({"follower": follower, "followee": followee})
 
 
 @cli.command()
 @click.argument("input")
 @click.argument("output")
 def timeline(input, output):
-    "Get users' timelines from CSV file containing user_ids"
+    """INPUT: CSV file containing user_ids
+       OUTPUT: CSV file with users' tweet timelines"""
 
     api = get_twitter_api()
 
@@ -124,7 +127,7 @@ def timeline(input, output):
         writer.write_header()
 
         for user_id in get_user_ids_from_csv(input):
-            tweets = GetUserTimeline(user_id=user_id)
+            tweets = GetUserTimeline(user_id)
             write_tweets_to_csv(writer, tweets)
 
 
