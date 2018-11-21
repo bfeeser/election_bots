@@ -53,7 +53,7 @@ def get_user_ids_from_csv(file):
 
 
 def write_tweets_to_csv(writer, tweets):
-    for tweet in result:
+    for tweet in tweets:
         writer.writerow(
             {
                 "user_id": tweet.user_id,
