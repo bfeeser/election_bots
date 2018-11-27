@@ -47,8 +47,8 @@ def get_twitter_api():
 
 
 def get_user_ids_from_csv(file):
-    with open(csvfile) as csvfile:
-        user_ids = [row["user_id"] for row in csv.DictReader(csvfile)]
+    with open(file) as csvfile:
+        user_ids = [row["user_id"] for row in DictReader(csvfile)]
     return user_ids
 
 
@@ -56,10 +56,10 @@ def write_tweets_to_csv(writer, tweets):
     for tweet in tweets:
         writer.writerow(
             {
-                "user_id": tweet.user_id,
-                "screen_name": tweet.screen_name,
+                "user_id": tweet.id,
+                "screen_name": tweet.user.screen_name,
                 "text": tweet.text,
-                "timestamp": tweet.timestamp,
+                "timestamp": tweet.created_at,
             }
         )
 
@@ -70,19 +70,20 @@ def cli():
 
 
 @cli.command()
+@click.argument("output")
 @click.option("--query", "-q", multiple=True, default=HASHTAGS)
 @click.option("--since", "-s", default="2018-09-01")
 @click.option("--until", "-u", default="2018-11-20")
 @click.option("--count", "-c", default=100, help="Number of tweets to pull")
-def search(ctx, query, since, until, count):
-    "Get tweets that match a query, such as a hashtag."
+def search(output, query, since, until, count):
+    "OUTPUT: CSV file with tweets that match a query, such as a hashtag."
 
     api = get_twitter_api()
 
     with open(output, "w") as outfile:
         fieldnames = "user_id", "screen_name", "tweet", "timestamp"
-        writer = csv.DictWriter(outfile, fieldnames=fieldnames)
-        writer.write_header()
+        writer = DictWriter(outfile, fieldnames=fieldnames)
+        writer.writeheader()
 
         for q in query:
             raw_query = urlencode(
@@ -96,7 +97,7 @@ def search(ctx, query, since, until, count):
 @cli.command()
 @click.argument("input")
 @click.argument("output")
-def followers(ctx, user_id):
+def followers(input, output):
     """INPUT: CSV file containing user_ids
        OUTPUT: CSV file with followers and followee user_ids"""
 
@@ -104,11 +105,11 @@ def followers(ctx, user_id):
 
     with open(output, "w") as outfile:
         fieldnames = "follwer", "followee"
-        writer = csv.DictWriter(outfile, fieldnames=fieldnames)
-        writer.write_header()
+        writer = DictWriter(outfile, fieldnames=fieldnames)
+        writer.writeheader()
 
         for followee in get_user_ids_from_csv(input):
-            for follower in api.GetFollowerIds(followee):
+            for follower in api.GetFollowerIDs(followee):
                 writer.writerow({"follower": follower, "followee": followee})
 
 
@@ -123,8 +124,8 @@ def timeline(input, output):
 
     with open(output, "w") as outfile:
         fieldnames = "user_id", "screen_name", "text", "timestamp"
-        writer = csv.DictWriter(outfile, fieldnames=fieldnames)
-        writer.write_header()
+        writer = DictWriter(outfile, fieldnames=fieldnames)
+        writer.writeheader()
 
         for user_id in get_user_ids_from_csv(input):
             tweets = GetUserTimeline(user_id)
