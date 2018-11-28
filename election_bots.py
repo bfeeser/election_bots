@@ -3,26 +3,99 @@ from csv import DictReader, DictWriter
 import click
 from datetime import date
 import os
-from urllib.parse import urlencode
 
 
-import twitter
+import tweepy
 
 
-HASHTAGS = [
-    "#gillum",
-    "#andrewgillum",
-    "#desantis",
-    "#rondesantis",
-    "#rickscott",
-    "#scott",
-    "#nelson",
-    "#billnelson",
-    "#floridaelection",
-    "#floridapolitcs",
-    "#2018midterms",
-    "#flsenate",
-    "#flgubernatorial",
+DEMOCRATIC_HASHTAGS = [
+    "#VoteAndrewGillum",
+    "#CountEveryVote",
+    "#VoteDesantis",
+    "#DemForce",
+    "#GillumForFlorida",
+    "#GillumForGovernor",
+    "#VoteBlue",
+    "#NeverRonDeSantis",
+    "#TrumpStooge",
+    "#GillumForTheWin",
+    "#BlueWave",
+    "#BlueTsunami2018",
+    "#BlueTsunami",
+    "#BlueWave2018",
+    "#FlipFloridaBlue",
+    "#TeamGillum",
+    "#GunsenseCandidate",
+    "#VoteBlueToSaveAmerica",
+    "#FloridaBlue",
+    "#BillNelson4Senate",
+    "#Gillum4Governor",
+    "#GillumSurge",
+    "#Gillum4Florida",
+    "#VoteDem",
+    "#fucktrump",
+    "#VoteGillum",
+    "#NelsonforSenate",
+    "#Nelson4Senate",
+    "#NelsonSenate",
+    "#antitrump",
+    "#dumptrump",
+    "#fuckgop",
+    "#rickscottisacrook",
+    "#GOPTaxScam",
+    "#NoScott",
+    "#VoteBlue2018",
+    "#ResistTrump",
+    "#BillNelsonForSenate",
+    "#BillNelsonSenate",
+]
+
+REPUBLICAN_HASHTAGS = [
+    "#DrainTheSwamp",
+    "#LockHerUp",
+    "#MAGA",
+    "#MAGATrain",
+    "#FakeNewsMedia",
+    "#FloridaGOP",
+    "#VoteGOP",
+    "#MAGARally",
+    "#VoteRonDeSantis",
+    "#RonDeSantisFL",
+    "#DeSantisForFlorida",
+    "#DeSantisForGovernor",
+    "#VoteRed",
+    "#JobsNotMobs",
+    "#SocialistGillum",
+    "#RedNationRising",
+    "#RedWave",
+    "#VoteDemsOut",
+    "#VoteRed2018",
+    "#VoteRedToSaveAmerica",
+    "#VoteRepublican",
+    "#TrumpTrain",
+    "#DeSantisForGov",
+    "#FloridaRed",
+    "#SupportPOTUSAgenda",
+    "#TeamDeSantis",
+    "#BillNelsonOut",
+    "#RepRonDeSantis",
+    "#libtards",
+    "#VoteRedToSaveAmerica",
+    "#VoteDemsOut",
+    "#GillumFBI ",
+    "#GillumPrison ",
+    "#GillumJail ",
+    "#GillumFraud ",
+    "#GillumLiar",
+    "#VoteDesantis",
+    "#libtard",
+    "#VoteRickScott",
+    "#VoteScott",
+    "#Desantis4Gov",
+    "#ScottForSenator",
+    "#Scott4Senator",
+    "#ScottForSenate",
+    "#Scott4Senate",
 ]
 
 
@@ -37,13 +110,17 @@ def read_config(path="config"):
 def get_twitter_api():
     config = read_config()
 
-    return twitter.Api(
-        consumer_key=config.get("twitter", "consumer_key"),
-        consumer_secret=config.get("twitter", "consumer_secret"),
-        access_token_key=config.get("twitter", "access_token_key"),
-        access_token_secret=config.get("twitter", "access_token_secret"),
-        sleep_on_rate_limit=True,
+    auth = tweepy.OAuthHandler(
+        config.get("twitter", "consumer_key"),
+        config.get("twitter", "consumer_secret"),
     )
+
+    auth.set_access_token(
+        config.get("twitter", "access_token_key"),
+        config.get("twitter", "access_token_secret"),
+    )
+
+    return tweepy.API(auth, wait_on_rate_limit=True)
 
 
 def get_user_ids_from_csv(file):
@@ -56,10 +133,11 @@ def write_tweets_to_csv(writer, tweets):
     for tweet in tweets:
         writer.writerow(
             {
+                "id": tweet.id,
                 "user_id": tweet.user.id,
                 "screen_name": tweet.user.screen_name,
-                "text": tweet.text,
-                "timestamp": tweet.created_at,
+                "text": tweet.full_text,
+                "created_at": tweet.created_at,
             }
         )
 
@@ -70,27 +148,34 @@ def cli():
 
 
 @cli.command()
-@click.argument("output")
-@click.option("--query", "-q", multiple=True, default=HASHTAGS)
-@click.option("--since", "-s", default="2018-09-01")
+@click.option("--democratic/--republican", required=True)
+@click.option("--since", "-s", default="2018-01-01")
 @click.option("--until", "-u", default="2018-11-20")
-@click.option("--count", "-c", default=100, help="Number of tweets to pull")
-def search(output, query, since, until, count):
+@click.option("--count", "-c", default=2000, help="Number of tweets to pull")
+def search(democratic, since, until, count):
     "OUTPUT: CSV file with tweets that match a query, such as a hashtag."
+
+    hashtags = DEMOCRATIC_HASHTAGS if democratic else REPUBLICAN_HASHTAGS
+
+    output = f"{'democratic' if democratic else 'republican'}_tweets.csv"
 
     api = get_twitter_api()
 
-    with open(output, "w") as outfile:
-        fieldnames = "user_id", "screen_name", "tweet", "timestamp"
+    with open(output, "w", encoding="utf8") as outfile:
+        fieldnames = "id", "user_id", "screen_name", "text", "created_at"
         writer = DictWriter(outfile, fieldnames=fieldnames)
         writer.writeheader()
 
-        for q in query:
-            raw_query = urlencode(
-                {"q": q, "since": since, "until": until, "count": count}
-            )
+        for q in hashtags:
+            tweets = tweepy.Cursor(
+                api.search,
+                tweet_mode="extended",
+                lang="en",
+                q=q,
+                since=since,
+                until=until,
+            ).items(count)
 
-            tweets = api.GetSearch(raw_query=raw_query)
             write_tweets_to_csv(writer, tweets)
 
 
@@ -99,18 +184,18 @@ def search(output, query, since, until, count):
 @click.argument("output")
 def followers(input, output):
     """INPUT: CSV file containing user_ids
-       OUTPUT: CSV file with followers and followee user_ids"""
+       OUTPUT: CSV file with from and to user_ids"""
 
     api = get_twitter_api()
 
     with open(output, "w") as outfile:
-        fieldnames = "follwer", "followee"
+        fieldnames = "from", "to"
         writer = DictWriter(outfile, fieldnames=fieldnames)
         writer.writeheader()
 
-        for followee in get_user_ids_from_csv(input):
-            for follower in api.GetFollowerIDs(followee):
-                writer.writerow({"follower": follower, "followee": followee})
+        for to in get_user_ids_from_csv(input):
+            for _from in api.GetFollowerIDs(to):
+                writer.writerow({"from": _from, "to": to})
 
 
 @cli.command()
@@ -128,7 +213,16 @@ def timeline(input, output):
         writer.writeheader()
 
         for user_id in get_user_ids_from_csv(input):
-            tweets = GetUserTimeline(user_id)
+
+            tweets = tweepy.Cursor(
+                api.user_timeline,
+                user_id=user_id,
+                tweet_mode="extended",
+                lang="en",
+                since=since,
+                until=until,
+            ).items(100)
+
             write_tweets_to_csv(writer, tweets)
 
 
