@@ -98,6 +98,67 @@ REPUBLICAN_HASHTAGS = [
     "#Scott4Senate",
 ]
 
+FLORIDA_HASHTAGS = [
+    "#gillum",
+    "#andrewgillum",
+    "#desantis",
+    "#rondesantis",
+    "#rickscott",
+    "#scott",
+    "#nelson",
+    "#billnelson",
+    "#floridaelection",
+    "#floridarecount",
+    "#floridapolitcs",
+    "#2018midterms",
+    "#flsenate",
+    "#flgubernatorial",
+    "#VoteAndrewGillum",
+    "#VoteDesantis",
+    "#FloridaGOP",
+    "#VoteRonDesantis",
+    "#GillumForFlorida",
+    "#GillumForGovernor",
+    "#NeverRonDeSantis",
+    "#GillumForTheWin",
+    "#RonDeSantisFL",
+    "#DeSantisForFlorida",
+    "#DeSantisForGovernor",
+    "#FlipFloridaBlue",
+    "#TeamGillum",
+    "#DeSantisForGov",
+    "#FloridaRed",
+    "#FloridaBlue",
+    "#BillNelson4Senate",
+    "#Gillum4Governor",
+    "#GillumSurge",
+    "#Gillum4Florida",
+    "#VoteGillum",
+    "#NelsonforSenate",
+    "#Nelson4Senate",
+    "#NelsonSenate",
+    "#TeamDeSantis",
+    "#BillNelsonOut",
+    "#RepRonDeSantis",
+    "#rickscottisacrook",
+    "#VoteDesantis",
+    "#NoScott",
+    "#BillNelsonForSenate",
+    "#BillNelsonSenate",
+    "#GillumFBI ",
+    "#GillumPrison ",
+    "#GillumJail ",
+    "#GillumFraud ",
+    "#GillumLiar",
+    "#VoteRickScott",
+    "#VoteScott",
+    "#Desantis4Gov",
+    "#ScottForSenator",
+    "#Scott4Senator",
+    "#ScottForSenate",
+    "#Scott4Senate",
+]
+
 
 def read_config(path="config"):
     if os.path.exists(path):
@@ -194,7 +255,7 @@ def followers(input, output):
         writer.writeheader()
 
         for to in get_user_ids_from_csv(input):
-            for _from in api.GetFollowerIDs(to):
+            for _from in tweepy.Cursor(api.followers_ids, user_id=to):
                 writer.writerow({"from": _from, "to": to})
 
 
