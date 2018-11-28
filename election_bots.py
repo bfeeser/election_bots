@@ -56,7 +56,7 @@ def write_tweets_to_csv(writer, tweets):
     for tweet in tweets:
         writer.writerow(
             {
-                "user_id": tweet.id,
+                "user_id": tweet.user.id,
                 "screen_name": tweet.user.screen_name,
                 "text": tweet.text,
                 "timestamp": tweet.created_at,
