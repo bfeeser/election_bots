@@ -3,161 +3,10 @@ from csv import DictReader, DictWriter
 import click
 from datetime import date
 import os
-
-
 import tweepy
 
 
-DEMOCRATIC_HASHTAGS = [
-    "#VoteAndrewGillum",
-    "#CountEveryVote",
-    "#VoteDesantis",
-    "#DemForce",
-    "#GillumForFlorida",
-    "#GillumForGovernor",
-    "#VoteBlue",
-    "#NeverRonDeSantis",
-    "#TrumpStooge",
-    "#GillumForTheWin",
-    "#BlueWave",
-    "#BlueTsunami2018",
-    "#BlueTsunami",
-    "#BlueWave2018",
-    "#FlipFloridaBlue",
-    "#TeamGillum",
-    "#GunsenseCandidate",
-    "#VoteBlueToSaveAmerica",
-    "#FloridaBlue",
-    "#BillNelson4Senate",
-    "#Gillum4Governor",
-    "#GillumSurge",
-    "#Gillum4Florida",
-    "#VoteDem",
-    "#fucktrump",
-    "#VoteGillum",
-    "#NelsonforSenate",
-    "#Nelson4Senate",
-    "#NelsonSenate",
-    "#antitrump",
-    "#dumptrump",
-    "#fuckgop",
-    "#rickscottisacrook",
-    "#GOPTaxScam",
-    "#NoScott",
-    "#VoteBlue2018",
-    "#ResistTrump",
-    "#BillNelsonForSenate",
-    "#BillNelsonSenate",
-]
-
-REPUBLICAN_HASHTAGS = [
-    "#DrainTheSwamp",
-    "#LockHerUp",
-    "#MAGA",
-    "#MAGATrain",
-    "#FakeNewsMedia",
-    "#FloridaGOP",
-    "#VoteGOP",
-    "#MAGARally",
-    "#VoteRonDeSantis",
-    "#RonDeSantisFL",
-    "#DeSantisForFlorida",
-    "#DeSantisForGovernor",
-    "#VoteRed",
-    "#JobsNotMobs",
-    "#SocialistGillum",
-    "#RedNationRising",
-    "#RedWave",
-    "#VoteDemsOut",
-    "#VoteRed2018",
-    "#VoteRedToSaveAmerica",
-    "#VoteRepublican",
-    "#TrumpTrain",
-    "#DeSantisForGov",
-    "#FloridaRed",
-    "#SupportPOTUSAgenda",
-    "#TeamDeSantis",
-    "#BillNelsonOut",
-    "#RepRonDeSantis",
-    "#libtards",
-    "#VoteRedToSaveAmerica",
-    "#VoteDemsOut",
-    "#GillumFBI ",
-    "#GillumPrison ",
-    "#GillumJail ",
-    "#GillumFraud ",
-    "#GillumLiar",
-    "#VoteDesantis",
-    "#libtard",
-    "#VoteRickScott",
-    "#VoteScott",
-    "#Desantis4Gov",
-    "#ScottForSenator",
-    "#Scott4Senator",
-    "#ScottForSenate",
-    "#Scott4Senate",
-]
-
-FLORIDA_HASHTAGS = [
-    "#gillum",
-    "#andrewgillum",
-    "#desantis",
-    "#rondesantis",
-    "#rickscott",
-    "#scott",
-    "#nelson",
-    "#billnelson",
-    "#floridaelection",
-    "#floridarecount",
-    "#floridapolitcs",
-    "#2018midterms",
-    "#flsenate",
-    "#flgubernatorial",
-    "#VoteAndrewGillum",
-    "#VoteDesantis",
-    "#FloridaGOP",
-    "#VoteRonDesantis",
-    "#GillumForFlorida",
-    "#GillumForGovernor",
-    "#NeverRonDeSantis",
-    "#GillumForTheWin",
-    "#RonDeSantisFL",
-    "#DeSantisForFlorida",
-    "#DeSantisForGovernor",
-    "#FlipFloridaBlue",
-    "#TeamGillum",
-    "#DeSantisForGov",
-    "#FloridaRed",
-    "#FloridaBlue",
-    "#BillNelson4Senate",
-    "#Gillum4Governor",
-    "#GillumSurge",
-    "#Gillum4Florida",
-    "#VoteGillum",
-    "#NelsonforSenate",
-    "#Nelson4Senate",
-    "#NelsonSenate",
-    "#TeamDeSantis",
-    "#BillNelsonOut",
-    "#RepRonDeSantis",
-    "#rickscottisacrook",
-    "#VoteDesantis",
-    "#NoScott",
-    "#BillNelsonForSenate",
-    "#BillNelsonSenate",
-    "#GillumFBI ",
-    "#GillumPrison ",
-    "#GillumJail ",
-    "#GillumFraud ",
-    "#GillumLiar",
-    "#VoteRickScott",
-    "#VoteScott",
-    "#Desantis4Gov",
-    "#ScottForSenator",
-    "#Scott4Senator",
-    "#ScottForSenate",
-    "#Scott4Senate",
-]
+from hashtags import FLORIDA_HASHTAGS, DEMOCRATIC_HASHTAGS, REPUBLICAN_HASHTAGS
 
 
 def read_config(path="config"):
@@ -184,9 +33,9 @@ def get_twitter_api():
     return tweepy.API(auth, wait_on_rate_limit=True)
 
 
-def get_user_ids_from_csv(file):
+def get_user_ids_from_csv(file, user_id_column="user_id"):
     with open(file) as csvfile:
-        user_ids = [row["user_id"] for row in DictReader(csvfile)]
+        user_ids = [row[user_id_column] for row in DictReader(csvfile)]
     return user_ids
 
 
@@ -209,16 +58,23 @@ def cli():
 
 
 @cli.command()
-@click.option("--democratic/--republican", required=True)
+@click.argument(
+    "search_type", type=click.Choice(["democratic", "republican", "florida"])
+)
 @click.option("--since", "-s", default="2018-01-01")
 @click.option("--until", "-u", default="2018-11-20")
 @click.option("--count", "-c", default=2000, help="Number of tweets to pull")
-def search(democratic, since, until, count):
+def search(search_type, since, until, count):
     "OUTPUT: CSV file with tweets that match a query, such as a hashtag."
 
-    hashtags = DEMOCRATIC_HASHTAGS if democratic else REPUBLICAN_HASHTAGS
+    if search_type == "democratic":
+        hashtags = DEMOCRATIC_HASHTAGS
+    elif search_type == "republican":
+        hashtags = REPUBLICAN_HASHTAGS
+    else:
+        hashtags = FLORIDA_HASHTAGS
 
-    output = f"{'democratic' if democratic else 'republican'}_tweets.csv"
+    output = f"{search_type}_tweets.csv"
 
     api = get_twitter_api()
 
@@ -243,26 +99,38 @@ def search(democratic, since, until, count):
 @cli.command()
 @click.argument("input")
 @click.argument("output")
-def followers(input, output):
+@click.option(
+    "--user_id_column",
+    default="user_id",
+    help="INPUT CSV file's user_id column to use",
+)
+def followers(input, output, user_id_column):
     """INPUT: CSV file containing user_ids
-       OUTPUT: CSV file with from and to user_ids"""
+       OUTPUT: CSV file with from_user_ids and to_user_ids"""
 
     api = get_twitter_api()
 
     with open(output, "w") as outfile:
-        fieldnames = "from", "to"
+        fieldnames = "from_user_id", "to_user_id"
         writer = DictWriter(outfile, fieldnames=fieldnames)
         writer.writeheader()
 
-        for to in get_user_ids_from_csv(input):
-            for _from in tweepy.Cursor(api.followers_ids, user_id=to):
-                writer.writerow({"from": _from, "to": to})
+        for to_user_id in get_user_ids_from_csv(input, user_id_column):
+            for from_user_id in api.followers_ids(user_id=to_user_id):
+                writer.writerow(
+                    {"from_user_id": from_user_id, "to_user_id": to_user_id}
+                )
 
 
 @cli.command()
 @click.argument("input")
 @click.argument("output")
-def timeline(input, output):
+@click.option(
+    "--user_id_column",
+    default="user_id",
+    help="INPUT CSV file's user_id column to use",
+)
+def timeline(input, output, user_id_column):
     """INPUT: CSV file containing user_ids
        OUTPUT: CSV file with users' tweet timelines"""
 
@@ -273,7 +141,7 @@ def timeline(input, output):
         writer = DictWriter(outfile, fieldnames=fieldnames)
         writer.writeheader()
 
-        for user_id in get_user_ids_from_csv(input):
+        for user_id in get_user_ids_from_csv(input, user_id_column):
 
             tweets = tweepy.Cursor(
                 api.user_timeline,

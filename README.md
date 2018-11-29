@@ -14,7 +14,7 @@ $ pip install pipenv
 $ git clone git@github.com:bfeeser/election_bots.git
 $ cd election_bots
 $ pipenv install
-$ pipenv run python election_bot.py search --democratic
+$ pipenv run python election_bot.py search democratic
 $ pipenv run python election_bot.py followers democratic_tweets.csv democratic_followers.csv
-$ pipenv run python election_bot.py timeline democratic_followers.csv
+$ pipenv run python election_bot.py timeline democratic_followers.csv --user_id_column="from_user_id"
 ```
