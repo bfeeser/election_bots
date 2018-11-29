@@ -6,7 +6,7 @@ import os
 import tweepy
 
 
-from hashtags import FLORIDA_HASHTAGS, DEMOCRATIC_HASHTAGS, REPUBLICAN_HASHTAGS
+from hashtags import HASHTAGS
 
 
 def read_config(path="config"):
@@ -67,23 +67,14 @@ def cli():
 def search(search_type, since, until, count):
     "OUTPUT: CSV file with tweets that match a query, such as a hashtag."
 
-    if search_type == "democratic":
-        hashtags = DEMOCRATIC_HASHTAGS
-    elif search_type == "republican":
-        hashtags = REPUBLICAN_HASHTAGS
-    else:
-        hashtags = FLORIDA_HASHTAGS
-
-    output = f"{search_type}_tweets.csv"
-
     api = get_twitter_api()
 
-    with open(output, "w", encoding="utf8") as outfile:
+    with open(f"{search_type}_tweets.csv", "w", encoding="utf8") as outfile:
         fieldnames = "id", "user_id", "screen_name", "text", "created_at"
         writer = DictWriter(outfile, fieldnames=fieldnames)
         writer.writeheader()
 
-        for q in hashtags:
+        for q in HASHTAGS[search_type]:
             tweets = tweepy.Cursor(
                 api.search,
                 tweet_mode="extended",
