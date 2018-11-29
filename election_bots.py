@@ -116,19 +116,22 @@ def followers(input, output, user_id_column):
 @cli.command()
 @click.argument("input")
 @click.argument("output")
+@click.option("--count", "-c", default=100, help="Number of tweets to pull")
+@click.option("--since", "-s", default="2018-01-01")
+@click.option("--until", "-u", default="2018-11-20")
 @click.option(
     "--user_id_column",
     default="user_id",
     help="INPUT CSV file's user_id column to use",
 )
-def timeline(input, output, user_id_column):
+def timeline(input, output, count, since, until, user_id_column):
     """INPUT: CSV file containing user_ids
        OUTPUT: CSV file with users' tweet timelines"""
 
     api = get_twitter_api()
 
-    with open(output, "w") as outfile:
-        fieldnames = "user_id", "screen_name", "text", "timestamp"
+    with open(output, "w", encoding="utf8") as outfile:
+        fieldnames = "id", "user_id", "screen_name", "text", "created_at"
         writer = DictWriter(outfile, fieldnames=fieldnames)
         writer.writeheader()
 
@@ -141,7 +144,7 @@ def timeline(input, output, user_id_column):
                 lang="en",
                 since=since,
                 until=until,
-            ).items(100)
+            ).items(count)
 
             write_tweets_to_csv(writer, tweets)
 
