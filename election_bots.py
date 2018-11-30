@@ -35,7 +35,7 @@ def get_twitter_api():
 
 def get_user_ids_from_csv(file, user_id_column="user_id"):
     with open(file) as csvfile:
-        user_ids = [row[user_id_column] for row in DictReader(csvfile)]
+        user_ids = {row[user_id_column] for row in DictReader(csvfile)}
     return user_ids
 
 
@@ -107,7 +107,13 @@ def followers(input, output, user_id_column):
         writer.writeheader()
 
         for to_user_id in get_user_ids_from_csv(input, user_id_column):
-            for from_user_id in api.followers_ids(user_id=to_user_id):
+
+            try:
+                from_user_ids = api.followers_ids(user_id=to_user_id)
+            except tweepy.TweepError:
+                continue
+
+            for from_user_id in from_user_ids:
                 writer.writerow(
                     {"from_user_id": from_user_id, "to_user_id": to_user_id}
                 )
