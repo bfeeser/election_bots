@@ -33,14 +33,15 @@ def get_twitter_api():
     return tweepy.API(auth, wait_on_rate_limit=True)
 
 
-def get_user_ids_from_csv(file, user_id_column="user_id"):
+def get_column_from_csv(file, column):
     with open(file) as csvfile:
-        user_ids = {row[user_id_column] for row in DictReader(csvfile)}
-    return user_ids
+        values = {row[column] for row in DictReader(csvfile)}
+    return values
 
 
 def write_tweets_to_csv(writer, tweets):
     for tweet in tweets:
+        print(tweet)
         writer.writerow(
             {
                 "id": tweet.id,
@@ -61,9 +62,9 @@ def cli():
 @click.argument(
     "search_type", type=click.Choice(["democratic", "republican", "florida"])
 )
-@click.option("--since", "-s", default="2018-01-01")
+@click.option("--since", "-s", default="2018-10-01")
 @click.option("--until", "-u", default="2018-11-20")
-@click.option("--count", "-c", default=2000, help="Number of tweets to pull")
+@click.option("--count", "-c", default=1000, help="Number of tweets to pull")
 def search(search_type, since, until, count):
     "OUTPUT: CSV file with tweets that match a query, such as a hashtag."
 
@@ -75,6 +76,7 @@ def search(search_type, since, until, count):
         writer.writeheader()
 
         for q in HASHTAGS[search_type]:
+
             tweets = tweepy.Cursor(
                 api.search,
                 tweet_mode="extended",
@@ -106,16 +108,16 @@ def followers(input, output, user_id_column):
         writer = DictWriter(outfile, fieldnames=fieldnames)
         writer.writeheader()
 
-        for to_user_id in get_user_ids_from_csv(input, user_id_column):
+        for value in get_column_from_csv(input, user_id_column):
 
             try:
-                from_user_ids = api.followers_ids(user_id=to_user_id)
+                from_user_ids = api.followers_ids(screen_name=value)
             except tweepy.TweepError:
                 continue
 
             for from_user_id in from_user_ids:
                 writer.writerow(
-                    {"from_user_id": from_user_id, "to_user_id": to_user_id}
+                    {"from_user_id": from_user_id, "to_user_id": value}
                 )
 
 
@@ -123,7 +125,7 @@ def followers(input, output, user_id_column):
 @click.argument("input")
 @click.argument("output")
 @click.option("--count", "-c", default=100, help="Number of tweets to pull")
-@click.option("--since", "-s", default="2018-01-01")
+@click.option("--since", "-s", default="2018-10-01")
 @click.option("--until", "-u", default="2018-11-20")
 @click.option(
     "--user_id_column",
@@ -141,16 +143,18 @@ def timeline(input, output, count, since, until, user_id_column):
         writer = DictWriter(outfile, fieldnames=fieldnames)
         writer.writeheader()
 
-        for user_id in get_user_ids_from_csv(input, user_id_column):
-
-            tweets = tweepy.Cursor(
-                api.user_timeline,
-                user_id=user_id,
-                tweet_mode="extended",
-                lang="en",
-                since=since,
-                until=until,
-            ).items(count)
+        for value in get_column_from_csv(input, user_id_column):
+            try:
+                tweets = tweepy.Cursor(
+                    api.user_timeline,
+                    user_id=int(user_id),
+                    tweet_mode="extended",
+                    lang="en",
+                    since=since,
+                    until=until,
+                ).items(count)
+            except tweepy.TweepError:
+                continue
 
             write_tweets_to_csv(writer, tweets)
 
