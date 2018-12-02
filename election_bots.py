@@ -39,17 +39,16 @@ def get_column_from_csv(file, column):
     return values
 
 
-def write_tweets_to_csv(writer, tweets):
-    for tweet in tweets:
-        writer.writerow(
-            {
-                "id": tweet.id,
-                "user_id": tweet.user.id,
-                "screen_name": tweet.user.screen_name,
-                "text": tweet.full_text,
-                "created_at": tweet.created_at,
-            }
-        )
+def write_tweet_to_csv(writer, tweet):
+    writer.writerow(
+        {
+            "id": tweet.id,
+            "user_id": tweet.user.id,
+            "screen_name": tweet.user.screen_name,
+            "text": tweet.full_text,
+            "created_at": tweet.created_at,
+        }
+    )
 
 
 @click.group()
@@ -75,17 +74,15 @@ def search(search_type, since, until, count):
         writer.writeheader()
 
         for q in HASHTAGS[search_type]:
-
-            tweets = tweepy.Cursor(
+            for tweet in tweepy.Cursor(
                 api.search,
                 tweet_mode="extended",
                 lang="en",
                 q=q,
                 since=since,
                 until=until,
-            ).items(count)
-
-            write_tweets_to_csv(writer, tweets)
+            ).items(count):
+                write_tweet_to_csv(writer, tweet)
 
 
 @cli.command()
@@ -144,18 +141,17 @@ def timeline(input, output, count, since, until, user_id_column):
 
         for user_id in get_column_from_csv(input, user_id_column):
             try:
-                tweets = tweepy.Cursor(
+                for tweet in tweepy.Cursor(
                     api.user_timeline,
                     user_id=user_id,
                     tweet_mode="extended",
                     lang="en",
                     since=since,
                     until=until,
-                ).items(count)
+                ).items(count):
+                    write_tweet_to_csv(writer, tweet)
             except tweepy.TweepError:
                 continue
-
-            write_tweets_to_csv(writer, tweets)
 
 
 if __name__ == "__main__":
