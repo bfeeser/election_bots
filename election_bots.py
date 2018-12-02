@@ -95,7 +95,7 @@ def search(search_type, since, until, count):
     help="INPUT CSV file's user_id column to use",
 )
 @click.option(
-    "--sample", default=100, help="How many followers to randomly sample"
+    "--sample_size", default=100, help="How many followers to randomly sample"
 )
 def followers(input, output, user_id_column, sample_size):
     """INPUT: CSV file containing user_ids
