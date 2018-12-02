@@ -3,6 +3,7 @@ from csv import DictReader, DictWriter
 import click
 from datetime import date
 import os
+from random import sample
 import tweepy
 
 
@@ -93,7 +94,10 @@ def search(search_type, since, until, count):
     default="user_id",
     help="INPUT CSV file's user_id column to use",
 )
-def followers(input, output, user_id_column):
+@click.option(
+    "--sample", default=100, help="How many followers to randomly sample"
+)
+def followers(input, output, user_id_column, sample_size):
     """INPUT: CSV file containing user_ids
        OUTPUT: CSV file with from_user_ids and to_user_ids"""
 
@@ -110,6 +114,9 @@ def followers(input, output, user_id_column):
                 from_user_ids = api.followers_ids(screen_name=value)
             except tweepy.TweepError:
                 continue
+
+            if len(from_user_ids) > sample_size:
+                from_user_ids = sample(from_user_ids, sample_size)
 
             for from_user_id in from_user_ids:
                 writer.writerow(
