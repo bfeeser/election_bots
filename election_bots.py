@@ -41,7 +41,6 @@ def get_column_from_csv(file, column):
 
 def write_tweets_to_csv(writer, tweets):
     for tweet in tweets:
-        print(tweet)
         writer.writerow(
             {
                 "id": tweet.id,
@@ -143,11 +142,11 @@ def timeline(input, output, count, since, until, user_id_column):
         writer = DictWriter(outfile, fieldnames=fieldnames)
         writer.writeheader()
 
-        for value in get_column_from_csv(input, user_id_column):
+        for user_id in get_column_from_csv(input, user_id_column):
             try:
                 tweets = tweepy.Cursor(
                     api.user_timeline,
-                    user_id=int(user_id),
+                    user_id=user_id,
                     tweet_mode="extended",
                     lang="en",
                     since=since,
